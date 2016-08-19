@@ -1,10 +1,24 @@
-﻿using Google.Apis.AnalyticsReporting.v4.Data;
+﻿/*
+Copyright 2016 Linda Lawton
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+using Google.Apis.AnalyticsReporting.v4.Data;
 using Google.Apis.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GoogleAnalytics.StreamingV4
 {
@@ -12,22 +26,22 @@ namespace GoogleAnalytics.StreamingV4
     {
 
         /// <summary>
-        /// make a request to the Google Analytics reporting api v4 Even though it is set up with more then one report
-        /// The streamer will only stream the first.   It would be posible to create a second streamer
+        /// Makes a request to the Google Analytics Reporting API v4.  
         /// 
-        /// Note: for this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
+        /// NOTE: It will only paginate the first report if you have more then one its just going to eat your quota.
+        /// 
+        /// Note2: for this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
         /// 
         /// ->>  public Google.Apis.AnalyticsReporting.v4.Data.GetReportsRequest Body { get; set; }
         /// 
         /// 
-        /// Note2:  It is a very bad idea to do what i am doing.   If you do this its still going to send the second report with every request
-        ///         However there will be no pagaintation so you wil just get the first page mulitple times.
+        /// Serously Dont send more then one:  It is a very bad idea to do what I am doing in this example.   
+        ///                                    If you do this its still going to send the second report with every request
+        ///                                    However there will be no pagaintation so you wil just get the first page mulitple times.
         /// </summary>
         /// <param name="service"></param>
-        public static void getData(AnalyticsReportingService service,string GoogleAnalyticsViewId)
+        public static void getData(AnalyticsReportingService service, string GoogleAnalyticsViewId)
         {
-
-            
 
             // Create the DateRange object.
             DateRange June2015 = new DateRange() { StartDate = "2015-01-01", EndDate = "2015-06-30" };
@@ -88,7 +102,7 @@ namespace GoogleAnalytics.StreamingV4
 
                 foreach (var row in report.Data.Rows)
                 {
-                    
+
                     List<String> dimensions = (List<String>)row.Dimensions;
                     List<DateRangeValues> metrics = (List<DateRangeValues>)row.Metrics;
                     for (int d = 0; d < dateRanges.Count() && d < metrics.Count(); d++)
@@ -108,14 +122,8 @@ namespace GoogleAnalytics.StreamingV4
                         Console.WriteLine("");
                     }
                 }
-
-
-
             }
-
-            
-
         }
     }
-        
+
 }

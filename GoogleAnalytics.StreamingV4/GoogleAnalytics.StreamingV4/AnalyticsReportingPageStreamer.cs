@@ -1,5 +1,5 @@
 ﻿/*
-Copyright 2016 Google Inc
+Copyright 2016 Linda Lawton
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,8 +23,6 @@ using System.Threading.Tasks;
 
 namespace GoogleAnalytics.StreamingV4
 {
-    // TODO(jskeet): Make sure one of our samples uses this.
-
     /// <summary>
     /// A page streamer is a helper to provide both synchronous and asynchronous page streaming
     /// of a listable or queryable resource.
@@ -42,13 +40,10 @@ namespace GoogleAnalytics.StreamingV4
     /// the page streamer doesn't require any service references or authentication, so it's completely safe to perform this
     /// in a type initializer.
     /// <code><![CDATA[
-    /// using Google.Apis.YouTube.v3;
-    /// using Google.Apis.YouTube.v3.Data;
-    /// ...
-    /// private static readonly snippetPageStreamer = new PageStreamer<SearchResult, SearchResource.ListRequest, SearchListResponse, string>(
-    ///     (request, token) => request.PageToken = token,
-    ///     response => response.NextPageToken,
-    ///     response => response.Items);
+    /// var orignal = new AnalyticsReportingPageStreamer<Report, ReportsResource.BatchGetRequest, GetReportsResponse, string>(
+    ///                                                  (request, token) => request.PageToken = token,
+    ///                                                  response => response.NextPageToken,
+    ///                                                  response => response.Reports);
     /// ]]></code>
     /// </example>
     /// <typeparam name="TResource">The type of resource being paginated</typeparam>
