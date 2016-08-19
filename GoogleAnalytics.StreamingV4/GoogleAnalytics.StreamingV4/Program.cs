@@ -15,9 +15,12 @@ namespace GoogleAnalytics.StreamingV4
                                                                 Util.MacAddress.getMacAddress());
 
 
-            StandardStreamer.getData(service, ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"]);
-            Console.ReadLine();
+            //StandardStreamer.getData(service, ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"]);
+            //Console.ReadLine();
 
+
+            AnalyticsStreamer.getData(service, ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"]);
+            Console.ReadLine();
 
 
 
