@@ -1,5 +1,6 @@
 ﻿/*
 Copyright 2016 Linda Lawton
+http://www.daimto.com/
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GoogleAnalytics.StreamingV4
@@ -26,108 +28,81 @@ namespace GoogleAnalytics.StreamingV4
     public class AnalyticsStreamer
     {
         /// <summary>
-        /// make a request to the Google Analytics reporting api v4 Even though it is set up with more then one report
-        /// The streamer will only stream the first.   It would be posible to create a second streamer
+        /// Make a request to the Google Analytics reporting api v4 
         /// 
-        /// Note: for this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
+        /// Note recomend that the reports NOT have diffrent dateRanges at this time.   I can find no way to match things up
+        /// The response does not contain any information about the report that was requested we have to ASSUME a lot here
         /// 
-        /// ->>  public Google.Apis.AnalyticsReporting.v4.Data.GetReportsRequest Body { get; set; }
-        /// 
-        /// 
-        /// Note2:  It is a very bad idea to do what i am doing.   If you do this its still going to send the second report with every request
-        ///         However there will be no pagaintation so you wil just get the first page mulitple times.
         /// </summary>
-        /// <param name="service"></param>
-        public static void getData(AnalyticsReportingService service, string GoogleAnalyticsViewId)
+        /// <param name="service">Authentcated AnalyticsReportingService</param>
+        /// <param name="requests">List of report Requests</param>
+        public static void getData(AnalyticsReportingService service, List<ReportRequest> requests)
         {
 
-            // Create the DateRange object.
-            DateRange June2015 = new DateRange() { StartDate = "2015-01-01", EndDate = "2015-06-30" };
-            DateRange June2016 = new DateRange() { StartDate = "2016-01-01", EndDate = "2016-06-30" };
-            List<DateRange> dateRanges = new List<DateRange>() { June2016, June2015 };
+            if (service == null)
+                throw new ArgumentNullException("Service is required");
+            if (requests == null)
+                throw new ArgumentNullException("Requests are required");
 
-            //Create the Dimensions object.
-            Dimension browser = new Dimension { Name = "ga:browser" };
-
-            // Create the ReportRequest object.
-            ReportRequest reportRequest = new ReportRequest
-            {
-                ViewId = GoogleAnalyticsViewId,
-                DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { browser },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:sessions" } },
-                PageSize = 20,
-            };
-
-            // Create a second ReportRequest object.
-            ReportRequest reportRequest2 = new ReportRequest
-            {
-                ViewId = GoogleAnalyticsViewId,
-                DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { new Dimension { Name = "ga:userType" } },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:users" } },
-                PageSize = 10,
-            };
-
-
-            List<ReportRequest> requests = new List<ReportRequest>();
-            requests.Add(reportRequest);
-            requests.Add(reportRequest2);
+            if (requests.Count == 0)
+                return;  // Nothing to do
 
             // Create the GetReportsRequest object.
             GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = requests };
             var test = service.Reports.BatchGet(getReport);
 
-
+            // Create the page streamer
             var orignal = new AnalyticsReportingPageStreamer<Report, ReportsResource.BatchGetRequest, GetReportsResponse, string>(
                                                   (request, token) => request.PageToken = token,
                                                   response => response.NextPageToken,
                                                   response => response.Reports);
-
-
+                       
             foreach (var report in orignal.Fetch(service.Reports, getReport))
             {
-
-                var reportDimensions = string.Join(",", report.ColumnHeader.Dimensions);
-
-                var reportMetrics = string.Join(",", report.ColumnHeader.MetricHeader.MetricHeaderEntries.Select(m => m.Name).ToList());
-
-                Console.WriteLine(string.Format("Results for Report: Dimensons: {0} :Metrics: {1}", reportDimensions, reportMetrics));
-
-                ColumnHeader header = report.ColumnHeader;
-                List<String> dimensionHeaders = (List<String>)header.Dimensions;
-                List<MetricHeaderEntry> metricHeaders = (List<MetricHeaderEntry>)header.MetricHeader.MetricHeaderEntries;
-
-                foreach (var row in report.Data.Rows)
-                {
-
-                    List<String> dimensions = (List<String>)row.Dimensions;
-                    List<DateRangeValues> metrics = (List<DateRangeValues>)row.Metrics;
-                    for (int d = 0; d < dateRanges.Count() && d < metrics.Count(); d++)
-                    {
-                        Console.Write(dateRanges[d].StartDate + " - " + dateRanges[d].EndDate + ": ");
-                        List<String> metricsForDaterange = (List<String>)row.Metrics[d].Values;
-
-                        dimensions.ForEach(delegate (String name)
-                        {
-                            Console.Write(name + " - ");
-                        });
-
-                        metricsForDaterange.ForEach(delegate (String name)
-                        {
-                            Console.Write(name + " - ");
-                        });
-                        Console.WriteLine("");
-                    }
-                }
-
-
-
+                // Defaulting dateranges to that of the first report request until I figure out why they arent returning with the response.
+                DisplayData.ShowData(report, (List<DateRange>)requests[0].DateRanges);
             }
+        }
 
 
+        /// <summary>
+        /// Make a request to the Google Analytics reporting api v4 Async
+        /// 
+        /// Note recomend that the reports NOT have diffrent dateRanges at this time.   I can find no way to match things up
+        /// The response does not contain any information about the report that was requested we have to ASSUME a lot here
+        /// </summary>
+        /// <param name="service">Authentcated AnalyticsReportingService</param>
+        /// <param name="requests">List of report Requests</param>
+        public static void getdataAsync(AnalyticsReportingService service, List<ReportRequest> requests)
+        {
 
+            if (service == null)
+                throw new ArgumentNullException("Service is required");
+            if (requests == null)
+                throw new ArgumentNullException("Requests are required");
+
+            if (requests.Count == 0)
+                return;  // Nothing to do
+
+
+            // Create the GetReportsRequest object.
+            GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = requests };
+            
+
+            var orignal = new AnalyticsReportingPageStreamer<Report, ReportsResource.BatchGetRequest, GetReportsResponse, string>(
+                                                (request, token) => request.PageToken = token,
+                                                response => response.NextPageToken,
+                                                response => response.Reports);
+
+
+            var allData = orignal.FetchAllAsync(service.Reports, getReport, CancellationToken.None);
+            allData.Wait();
+
+            foreach (var report in allData.Result)
+            {
+                // Defaulting dateranges to that of the first report request until I figure out why they arent returning with the response.
+                DisplayData.ShowData(report, (List<DateRange>)requests[0].DateRanges);
+            }
         }
     }
-
 }

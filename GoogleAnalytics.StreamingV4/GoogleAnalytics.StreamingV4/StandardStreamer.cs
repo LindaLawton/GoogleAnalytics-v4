@@ -1,5 +1,6 @@
 ﻿/*
 Copyright 2016 Linda Lawton
+http://www.daimto.com/
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,6 +20,7 @@ using Google.Apis.Requests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace GoogleAnalytics.StreamingV4
 {
@@ -26,11 +28,64 @@ namespace GoogleAnalytics.StreamingV4
     {
 
         /// <summary>
-        /// Makes a request to the Google Analytics Reporting API v4.  
+        /// Makes a request to the Google Analytics Reporting API v4.  Using the Default Google .Net Client library PageStreamer.
         /// 
-        /// NOTE: It will only paginate the first report if you have more then one its just going to eat your quota.
+        /// NOTE: It will only work with one report.
         /// 
-        /// Note2: for this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
+        /// Note2: For this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
+        /// 
+        /// ->>  public Google.Apis.AnalyticsReporting.v4.Data.GetReportsRequest Body { get; set; }
+        /// 
+        /// 
+        /// Serously Dont send more then one:  It is a very bad idea to do what I am doing in this example.   
+        ///                                    If you do this its still going to send the second report with every request
+        ///                                    However there will be no pagaintation so you wil just get the first page mulitple times.
+        /// </summary>
+        /// <param name="service">Authentcated AnalyticsReportingService</param>
+        /// <param name="requests">List of report Requests</param>
+        public static void getData(AnalyticsReportingService service, List<ReportRequest> requests)
+        {
+            if (service == null)
+                throw new ArgumentNullException("Service is required");
+            if (requests == null)
+                throw new ArgumentNullException("Requests are required");
+
+            if (requests.Count == 0)
+                return;  // Nothing to do
+
+            // If you try and send more then one report we are going to delete the extras. 
+            // This just wont work with more then one report.
+            if (requests.Count > 1)
+            {
+                requests.RemoveRange(1, requests.Count - 1);
+            }
+
+            // Create the GetReportsRequest object.
+            GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = requests };
+            var test = service.Reports.BatchGet(getReport);
+
+
+            var orignal = new PageStreamer<Report, ReportsResource.BatchGetRequest, GetReportsResponse, string>(
+                                                   (request, token) => request.Body.ReportRequests[0].PageToken = token,
+                                                   response => response.Reports[0].NextPageToken,
+                                                   response => response.Reports);          
+
+
+            foreach (var report in orignal.Fetch(test))
+            {
+
+                // Defaulting dateranges to that of the first report request until I figure out why they arent returning with the response.
+                DisplayData.ShowData(report, (List<DateRange>)requests[0].DateRanges);
+            }
+        }
+
+
+        /// <summary>
+        /// Makes an Async request to the Google Analytics Reporting API v4.  Using the Default Google .Net Client library PageStreamer.
+        /// 
+        /// NOTE: It will only work with one report.
+        /// 
+        /// Note2: For this to work the AnaltyicsReportingService.cs must be changed to allow body to be public
         /// 
         /// ->>  public Google.Apis.AnalyticsReporting.v4.Data.GetReportsRequest Body { get; set; }
         /// 
@@ -40,41 +95,24 @@ namespace GoogleAnalytics.StreamingV4
         ///                                    However there will be no pagaintation so you wil just get the first page mulitple times.
         /// </summary>
         /// <param name="service"></param>
-        public static void getData(AnalyticsReportingService service, string GoogleAnalyticsViewId)
+        /// <param name="requests">List of report Requests</param>
+        public static void getDataAsync(AnalyticsReportingService service, List<ReportRequest> requests)
         {
+            if (service == null)
+                throw new ArgumentNullException("Service is required");
+            if (requests == null)
+                throw new ArgumentNullException("Requests are required");
 
-            // Create the DateRange object.
-            DateRange June2015 = new DateRange() { StartDate = "2015-01-01", EndDate = "2015-06-30" };
-            DateRange June2016 = new DateRange() { StartDate = "2016-01-01", EndDate = "2016-06-30" };
-            List<DateRange> dateRanges = new List<DateRange>() { June2016, June2015 };
+            if (requests.Count == 0)
+                return;  // Nothing to do
 
-            //Create the Dimensions object.
-            Dimension browser = new Dimension { Name = "ga:browser" };
-
-            // Create the ReportRequest object.
-            ReportRequest reportRequest = new ReportRequest
+            // If you try and send more then one report we are going to delete the extras. 
+            // This just wont work with more then one report.
+            if (requests.Count > 1)
             {
-                ViewId = GoogleAnalyticsViewId,
-                DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { browser },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:sessions" } },
-                PageSize = 5,
-            };
+                requests.RemoveRange(1, requests.Count - 1);
+            }
 
-            // Create a second ReportRequest object.
-            ReportRequest reportRequest2 = new ReportRequest
-            {
-                ViewId = GoogleAnalyticsViewId,
-                DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { new Dimension { Name = "ga:userType" } },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:users" } },
-                PageSize = 10,
-            };
-
-
-            List<ReportRequest> requests = new List<ReportRequest>();
-            requests.Add(reportRequest);
-            requests.Add(reportRequest2);
 
             // Create the GetReportsRequest object.
             GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = requests };
@@ -85,45 +123,18 @@ namespace GoogleAnalytics.StreamingV4
                                                    (request, token) => request.Body.ReportRequests[0].PageToken = token,
                                                    response => response.Reports[0].NextPageToken,
                                                    response => response.Reports);
+            
+            var allData = orignal.FetchAllAsync(test, CancellationToken.None);
+            allData.Wait();
 
-
-            foreach (var report in orignal.Fetch(test))
+            foreach (var report in allData.Result)
             {
-
-                var reportDimensions = string.Join(",", report.ColumnHeader.Dimensions);
-
-                var reportMetrics = string.Join(",", report.ColumnHeader.MetricHeader.MetricHeaderEntries.Select(m => m.Name).ToList());
-
-                Console.WriteLine(string.Format("Results for Report: Dimensons: {0} :Metrics: {1}", reportDimensions, reportMetrics));
-
-                ColumnHeader header = report.ColumnHeader;
-                List<String> dimensionHeaders = (List<String>)header.Dimensions;
-                List<MetricHeaderEntry> metricHeaders = (List<MetricHeaderEntry>)header.MetricHeader.MetricHeaderEntries;
-
-                foreach (var row in report.Data.Rows)
-                {
-
-                    List<String> dimensions = (List<String>)row.Dimensions;
-                    List<DateRangeValues> metrics = (List<DateRangeValues>)row.Metrics;
-                    for (int d = 0; d < dateRanges.Count() && d < metrics.Count(); d++)
-                    {
-                        Console.Write(dateRanges[d].StartDate + " - " + dateRanges[d].EndDate + ": ");
-                        List<String> metricsForDaterange = (List<String>)row.Metrics[d].Values;
-
-                        dimensions.ForEach(delegate (String name)
-                        {
-                            Console.Write(name + " - ");
-                        });
-
-                        metricsForDaterange.ForEach(delegate (String name)
-                        {
-                            Console.Write(name + " - ");
-                        });
-                        Console.WriteLine("");
-                    }
-                }
+                // Defaulting dateranges to that of the first report request until I figure out why they arent returning with the response.
+                DisplayData.ShowData(report, (List<DateRange>)requests[0].DateRanges);
             }
         }
+
+
     }
 
 }

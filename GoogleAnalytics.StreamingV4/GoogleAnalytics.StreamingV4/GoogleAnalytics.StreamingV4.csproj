@@ -83,6 +83,7 @@
     <Compile Include="AnalyticsReportingPageStreamer.cs" />
     <Compile Include="AnalyticsReportingService.cs" />
     <Compile Include="AnalyticsStreamer.cs" />
+    <Compile Include="DisplayData.cs" />
     <Compile Include="GoogleAuthentcation.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -6,9 +6,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyTitle("GoogleAnalytics.StreamingV4")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyDescription("Sample project for the Google Analytics V4 library.")]
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("")]
+[assembly: AssemblyCompany("Daimto")]
 [assembly: AssemblyProduct("GoogleAnalytics.StreamingV4")]
 [assembly: AssemblyCopyright("Copyright ©  2016")]
 [assembly: AssemblyTrademark("")]
