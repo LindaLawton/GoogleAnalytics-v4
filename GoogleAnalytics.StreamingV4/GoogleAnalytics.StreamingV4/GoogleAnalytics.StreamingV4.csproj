@@ -85,6 +85,7 @@
     <Compile Include="AnalyticsStreamer.cs" />
     <Compile Include="DisplayData.cs" />
     <Compile Include="GoogleAuthentcation.cs" />
+    <Compile Include="GoogleDeveloper\GoogleDevSiteSamples.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StandardStreamer.cs" />
