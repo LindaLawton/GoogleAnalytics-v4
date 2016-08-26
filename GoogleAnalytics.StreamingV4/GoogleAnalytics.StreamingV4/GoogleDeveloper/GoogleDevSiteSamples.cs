@@ -478,7 +478,7 @@ namespace GoogleAnalytics.StreamingV4.GoogleDeveloper
             request.CohortGroup = cohortGroup;
 
             // Create the GetReportsRequest object.
-            GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = new List<ReportRequest> { request };
+            GetReportsRequest getReport = new GetReportsRequest() { ReportRequests = new List<ReportRequest> { request } };
 
             // Call the batchGet method.
             GetReportsResponse response = analyticsreporting.Reports.BatchGet(getReport).Execute();

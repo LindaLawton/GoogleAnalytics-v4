@@ -25,6 +25,12 @@ namespace GoogleAnalytics.StreamingV4
     {
         static void Main(string[] args)
         {
+            // The MetaData api is actually part of Google Analytics Reporting V3.  I have split it out and created a single class 
+            // For use with the Reporting api no need to have everything.
+            // Adding metaData api to get the dimensions and metrics then I can be sure they are corect. 
+            MetaDataHelper metaData = new MetaDataHelper(ConfigurationManager.AppSettings["APIKey"]);
+            
+
             // Required varables can be found in App.config.
             var service = GoogleAuthentcation.AuthenticateOauth(ConfigurationManager.AppSettings["clientSecretJsonPath"],
                                                                 Util.MacAddress.getMacAddress());
@@ -35,25 +41,41 @@ namespace GoogleAnalytics.StreamingV4
             List<DateRange> dateRanges = new List<DateRange>() { June2016, June2015 };
 
             //Create the Dimensions object.
-            Dimension browser = new Dimension { Name = "ga:browser" };
+            Dimension browser = metaData.getReportingDimensions().Find(a => a.Name.ToLower() == "ga:browser");
+            Dimension userType = metaData.getReportingDimensions().Find(a => a.Name.ToLower() == "ga:usertype");
+            Metric sessions = metaData.getReportingMetrics().Find(a => a.Expression.ToLower() == "ga:sessions");
+            Metric users = metaData.getReportingMetrics().Find(a => a.Expression.ToLower() == "ga:users");
 
             // Create the ReportRequest object.
+            // This should have a large number of rows
             ReportRequest reportRequest = new ReportRequest
             {
                 ViewId = ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"],
                 DateRanges = dateRanges,
                 Dimensions = new List<Dimension>() { browser },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:sessions" } },
+                Metrics = new List<Metric>() { sessions  },
                 PageSize = 20,
             };
 
             // Create a second ReportRequest object.
+            // This will probably only have two rows
             ReportRequest reportRequest2 = new ReportRequest
             {
                 ViewId = ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"],
                 DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { new Dimension { Name = "ga:userType" } },
-                Metrics = new List<Metric>() { new Metric { Expression = "ga:users" } },
+                Dimensions = new List<Dimension>() { userType },
+                Metrics = new List<Metric>() { users },
+                PageSize = 10,
+            };
+
+            // Create a third report objet with two dimensions
+            // this will also have a large number of rows.
+            ReportRequest reportRequest3 = new ReportRequest
+            {
+                ViewId = ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"],
+                DateRanges = dateRanges,
+                Dimensions = new List<Dimension>() { userType , browser },
+                Metrics = new List<Metric>() { users },
                 PageSize = 10,
             };
 
@@ -61,6 +83,7 @@ namespace GoogleAnalytics.StreamingV4
             List<ReportRequest> requests = new List<ReportRequest>();
             requests.Add(reportRequest);
             requests.Add(reportRequest2);
+            requests.Add(reportRequest3);
 
             // Example using my own pagestreamer that will only work with the Google Analytics Reporting V4 API
             // Works with batching and does not require any changes to the client library.  
