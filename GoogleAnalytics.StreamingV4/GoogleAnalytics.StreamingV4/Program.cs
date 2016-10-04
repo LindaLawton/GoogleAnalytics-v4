@@ -29,7 +29,7 @@ namespace GoogleAnalytics.StreamingV4
             // For use with the Reporting api no need to have everything.
             // Adding metaData api to get the dimensions and metrics then I can be sure they are corect. 
             MetaDataHelper metaData = new MetaDataHelper(ConfigurationManager.AppSettings["APIKey"]);
-            
+
 
             // Required varables can be found in App.config.
             var service = GoogleAuthentcation.AuthenticateOauth(ConfigurationManager.AppSettings["clientSecretJsonPath"],
@@ -46,6 +46,18 @@ namespace GoogleAnalytics.StreamingV4
             Metric sessions = metaData.getReportingMetrics().Find(a => a.Expression.ToLower() == "ga:sessions");
             Metric users = metaData.getReportingMetrics().Find(a => a.Expression.ToLower() == "ga:users");
 
+            // Filter example
+            DimensionFilterClause dimensonFitlerClause = new DimensionFilterClause();
+            dimensonFitlerClause.Operator__ = "OR";
+            DimensionFilter filter = new DimensionFilter();
+            filter.DimensionName = "ga:usertype";
+            filter.Not = false;
+            filter.Expressions = new string[] { "Returning Visitor" };
+            filter.CaseSensitive = true;
+            filter.Operator__ = "EXACT";
+            dimensonFitlerClause.Filters = new List<DimensionFilter>() { filter };
+
+
             // Create the ReportRequest object.
             // This should have a large number of rows
             ReportRequest reportRequest = new ReportRequest
@@ -53,8 +65,9 @@ namespace GoogleAnalytics.StreamingV4
                 ViewId = ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"],
                 DateRanges = dateRanges,
                 Dimensions = new List<Dimension>() { browser },
-                Metrics = new List<Metric>() { sessions  },
+                Metrics = new List<Metric>() { sessions },
                 PageSize = 20,
+                DimensionFilterClauses = new List<DimensionFilterClause>() { dimensonFitlerClause },
             };
 
             // Create a second ReportRequest object.
@@ -66,6 +79,7 @@ namespace GoogleAnalytics.StreamingV4
                 Dimensions = new List<Dimension>() { userType },
                 Metrics = new List<Metric>() { users },
                 PageSize = 10,
+                DimensionFilterClauses = new List<DimensionFilterClause>() { dimensonFitlerClause },
             };
 
             // Create a third report objet with two dimensions
@@ -74,9 +88,10 @@ namespace GoogleAnalytics.StreamingV4
             {
                 ViewId = ConfigurationManager.AppSettings["GoogleAnaltyicsViewId"],
                 DateRanges = dateRanges,
-                Dimensions = new List<Dimension>() { userType , browser },
+                Dimensions = new List<Dimension>() { userType, browser },
                 Metrics = new List<Metric>() { users },
                 PageSize = 10,
+                DimensionFilterClauses = new List<DimensionFilterClause>() { dimensonFitlerClause },
             };
 
 
@@ -90,19 +105,19 @@ namespace GoogleAnalytics.StreamingV4
             AnalyticsStreamer.getData(service, requests);
 
             // Gets data Async
-            AnalyticsStreamer.getdataAsync(service,requests);
+            AnalyticsStreamer.getdataAsync(service, requests);
 
 
 
             // Example of Page streaing using the default page streamer only recomended if you have a single report.  Requires a patch of the AnalyticsReportingService.cs 
-            StandardStreamer.getData(service, requests);
+            //StandardStreamer.getData(service, requests);
 
             // Example of Page streaing  async using the default page streamer only recomended if you have a single report.  Requires a patch of the AnalyticsReportingService.cs 
-            StandardStreamer.getDataAsync(service, requests);
+           // StandardStreamer.getDataAsync(service, requests);
 
             Console.ReadLine();
 
-        
+
 
 
 
